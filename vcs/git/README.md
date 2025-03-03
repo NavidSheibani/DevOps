@@ -5,10 +5,10 @@ apt install git\
 ------
 #**Config** 
 
-`git config --global user.name “navid sheibani”`\
+`git config --global user.name “navid sheibani”`
 
-[root@host ~]# git config --global user.email “navid@localhost”
-[user@host ~]$ cat ~/.gitconfig
+`git config --global user.email “navid@localhost”`
+`cat ~/.gitconfig`
 -----
 [root@host ~]# git config --system system.name “Git Repo Server 1”
 [root@host ~]# git config --system user.name “Arash Foroughi”
