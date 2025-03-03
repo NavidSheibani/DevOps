@@ -1,7 +1,7 @@
 
 **installing**
 apt install git
-git --version
+`git --version`
 
 ------
 #Config : 
