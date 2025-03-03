@@ -1,11 +1,14 @@
 
 #installing : 
-[root@host ~]# apt install git
-[user@host ~]$ git --version
+apt install git
+git --version
+
 ------
 #Config : 
-[root@host ~]# git config --global user.name “Arash Foroughi”
-[root@host ~]# git config --global user.email “arash@localhost”
+
+[root@host ~]# git config --global user.name “navid sheibani”
+
+[root@host ~]# git config --global user.email “navid@localhost”
 [user@host ~]$ cat ~/.gitconfig
 -----
 [root@host ~]# git config --system system.name “Git Repo Server 1”
