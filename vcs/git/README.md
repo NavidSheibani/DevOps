@@ -1,10 +1,8 @@
 
 #installing : 
-
 [root@host ~]# apt install git
 [user@host ~]$ git --version
 ------
-
 #Config : 
 [root@host ~]# git config --global user.name “Arash Foroughi”
 [root@host ~]# git config --global user.email “arash@localhost”
