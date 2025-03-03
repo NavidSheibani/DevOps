@@ -1,12 +1,11 @@
 
-**installing**
+**installing**\
 apt install git\
 `git --version`
-
 ------
-#Config : 
+#**Config** 
 
-[root@host ~]# git config --global user.name “navid sheibani”
+`git config --global user.name “navid sheibani”`\
 
 [root@host ~]# git config --global user.email “navid@localhost”
 [user@host ~]$ cat ~/.gitconfig
