@@ -1,1 +1,17 @@
+1️⃣ Advanced Container Management
+
+docker create --name mycontainer ubuntu  # Create a container without starting it
+docker rename old_name new_name          # Rename a container
+docker update --restart=always mycontainer  # Change restart policy
+docker stats                              # Show live resource usage
+docker top mycontainer                    # Show running processes inside a container
+docker exec -it mycontainer bash          # Enter running container
+docker logs -f --tail 100 mycontainer     # View live logs (last 100 lines)
+docker cp file.txt mycontainer:/path/     # Copy files to a container
+docker cp mycontainer:/path/file.txt .    # Copy files from a container
+docker pause mycontainer                  # Pause processes
+docker unpause mycontainer                # Resume processes
+docker wait mycontainer                    # Wait for container to stop and return exit code
+docker commit mycontainer myimage:v1      # Save a running container as an image
+
 
