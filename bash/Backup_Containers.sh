@@ -19,7 +19,7 @@ for container in $containers; do
     IMAGE_TAG="${TIMESTAMP}"
     BACKUP_FILE="${BACKUP_DIR}/${container}_${TIMESTAMP}.tar"
 
-    echo "🔹 Backing up container: $container"
+    echo "Backing up container: $container"
 
     # Commit the container to an image
     docker commit "$container" "$IMAGE_NAME:$IMAGE_TAG"
