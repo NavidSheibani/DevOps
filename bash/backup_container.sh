@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#maintainer navidsheibani
 # Variables
 CONTAINER_NAME="your_container"
 IMAGE_NAME="your_dockerhub_username/your_repository"
