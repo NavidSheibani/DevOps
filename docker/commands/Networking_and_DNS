@@ -1,0 +1,11 @@
+docker network create --driver bridge mynetwork  # Create a custom network
+docker network connect mynetwork mycontainer     # Connect a container to a network
+docker network disconnect mynetwork mycontainer  # Disconnect a container from a network
+docker network ls                                # List networks
+docker inspect mycontainer | jq '.NetworkSettings.Networks'  # Inspect container networking
+docker run --rm --net=host busybox ifconfig      # Check host network interface inside a container
+docker run --rm --net=none busybox ifconfig      # Check network isolation
+docker exec mycontainer ping -c 4 google.com     # Test DNS inside a container
+
+
+

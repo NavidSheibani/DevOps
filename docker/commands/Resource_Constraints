@@ -1,0 +1,5 @@
+docker run --memory=512m --cpus="1.5" myimage  # Limit memory & CPU
+docker update --memory=1g --cpus="2" mycontainer  # Update running container limits
+docker stats                                    # Monitor real-time resource usage
+docker events --filter 'container=mycontainer'  # Monitor real-time events
+

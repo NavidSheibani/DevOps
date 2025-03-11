@@ -1,0 +1,8 @@
+docker swarm init                          # Initialize swarm mode
+docker node ls                             # List swarm nodes
+docker service create --replicas=3 --name myapp nginx  # Deploy a service with replicas
+docker service ps myapp                    # List tasks for a service
+docker stack deploy -c docker-compose.yml mystack  # Deploy stack from Compose
+docker stack ls                            # List deployed stacks
+docker stack rm mystack                    # Remove a stack
+

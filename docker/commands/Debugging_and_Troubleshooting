@@ -1,0 +1,8 @@
+docker ps -a --filter "exited=1"             # List failed containers
+docker logs -f mycontainer                    # Live container logs
+docker inspect mycontainer                    # View detailed container info
+docker diff mycontainer                        # Show file changes in container
+docker exec -it mycontainer sh                 # Open shell in container
+docker system df                               # Check disk usage
+docker system prune -a                         # Remove all unused images, containers, and networks
+

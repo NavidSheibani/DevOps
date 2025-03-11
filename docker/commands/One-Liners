@@ -1,0 +1,7 @@
+docker ps -q | xargs docker stop              # Stop all running containers
+docker ps -aq | xargs docker rm               # Remove all containers
+docker images -q | xargs docker rmi           # Remove all images
+docker network ls | awk '{print $1}' | xargs docker network rm  # Remove all networks
+docker volume ls | awk '{print $2}' | xargs docker volume rm    # Remove all volumes
+docker logs -f $(docker ps -q --filter "name=myapp")  # Follow logs for a specific container
+

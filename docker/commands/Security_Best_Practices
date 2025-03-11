@@ -1,0 +1,8 @@
+docker scan myimage                         # Scan image for vulnerabilities
+docker history myimage                      # Check image layers & sizes
+docker run --read-only myimage              # Run container in read-only mode
+docker run --user 1001:1001 myimage         # Run container as non-root user
+docker run --cap-drop ALL myimage           # Drop all Linux capabilities
+docker run --security-opt no-new-privileges myimage  # Restrict privilege escalation
+docker inspect --format='{{.Config.User}}' mycontainer  # Check running container user
+

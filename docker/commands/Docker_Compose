@@ -1,0 +1,7 @@
+docker-compose up -d                     # Start services in detached mode
+docker-compose down                      # Stop and remove all containers
+docker-compose restart                   # Restart all services
+docker-compose logs -f                    # View live logs
+docker-compose exec app sh                # Run a shell inside a service
+docker-compose ps                         # List running services
+

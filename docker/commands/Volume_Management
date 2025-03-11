@@ -1,0 +1,8 @@
+docker volume create myvolume                      # Create a volume
+docker volume inspect myvolume                     # View volume details
+docker volume ls                                   # List volumes
+docker volume rm myvolume                          # Remove a volume
+docker run -v myvolume:/data ubuntu               # Mount a volume in a container
+docker run --mount type=bind,source="$(pwd)",target=/app ubuntu  # Bind mount a local folder
+docker run -d --tmpfs /tmp:size=100m ubuntu       # Create an ephemeral in-memory volume
+

@@ -1,0 +1,9 @@
+docker build --no-cache -t myimage .      # Build without cache
+docker build --progress=plain -t myimage .  # Show detailed output
+docker image prune -a                     # Remove all unused images
+docker rmi $(docker images -q)            # Delete all images
+docker save -o myimage.tar myimage:v1     # Save an image as a tar file
+docker load -i myimage.tar                # Load an image from tar
+docker export -o mycontainer.tar mycontainer  # Export a container filesystem
+docker import mycontainer.tar mynewimage  # Import to create a new image
+
