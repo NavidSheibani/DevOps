@@ -1,0 +1,8 @@
+navid@sheibani:~/Desktop/pro/DevOps$ git init
+navid@sheibani:~/Desktop/pro/DevOps$git remote add origin https://github.com/NavidSheibani/DevOps.git
+navid@sheibani:~/Desktop/pro/DevOps$ git remote -v
+navid@sheibani:~/Desktop/pro/DevOps$ git add .
+naweed@sheibani:~/Desktop/pro/DevOps$ git commit -m "Initial commit"
+naweed@sheibani:~/Desktop/pro/DevOps$ git push --set-upstream origin main
+
+
