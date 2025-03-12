@@ -1,0 +1,53 @@
+
+# Setting Up Virtual Machines with QEMU, KVM, and Virt-Manager on Debian/Ubuntu
+
+$ sudo apt update
+$ sudo apt upgrade
+$ sudo apt install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils virt-manager
+
+# To manage virtual machines without root privileges, add your user to the ‘libvirt’ and ‘kvm’ groups by running:
+
+$ sudo adduser $USER libvirt
+$ sudo adduser $USER kvm
+
+# Check that the libvirt service is running with:
+
+$ sudo systemctl status libvirtd
+
+# If it’s not running, start and enable it at boot with:
+
+$ sudo systemctl start libvirtd
+$ sudo systemctl enable libvirtd
+
+# Open Virt-Manager either from your applications menu or by executing the following command in a terminal:
+
+$ virt-manager
+
+
+------
+
+
+#Utilizing QEMU Guest Agent
+
+The QEMU Guest Agent facilitates improved communication between the host and the guest VMs, enabling functionalities such as file transfers, graceful shutdowns, and system information queries. To take advantage of these features, install the guest agent in your VMs:
+
+$ sudo apt install qemu-guest-agent
+
+$ sudo virsh list --all  # List all running VMs
+$ sudo virsh start vm_name  # Start a VM
+$ sudo virsh shutdown vm_name  # Shutdown a VM
+$ sudo virsh dominfo vm_name    # Get VM information: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
