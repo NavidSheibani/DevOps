@@ -9,6 +9,6 @@ else
 fi
 
 ######
-#This script checks if a container is running; if not, it restarts it.
-#NavidSheibani
+# This script checks if a container is running; if not, it restarts it.
+# Author : NavidSheibani
 #####

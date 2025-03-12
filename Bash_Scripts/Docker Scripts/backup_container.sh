@@ -1,5 +1,5 @@
 #!/bin/bash
-#maintainer navidsheibani
+
 # Variables
 CONTAINER_NAME="your_container"
 IMAGE_NAME="your_dockerhub_username/your_repository"
@@ -27,3 +27,6 @@ docker rmi "$IMAGE_NAME:$TAG"
 
 echo "Backup and push completed!"
 
+
+# for backup A container
+# Author : NavidSheibani

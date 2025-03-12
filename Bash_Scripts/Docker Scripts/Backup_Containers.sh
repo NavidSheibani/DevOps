@@ -1,6 +1,7 @@
 #!/bin/bash
-# NavidSheibani
+
 # Set Docker Hub username (optional, if pushing images)
+
 DOCKER_HUB_USERNAME="your_dockerhub_username"
 BACKUP_DIR="/backup" # Local backup directory
 
@@ -37,3 +38,7 @@ for container in $containers; do
 done
 
 echo " All containers backed up successfully!"
+
+
+# for Backup all Containers 
+# Author : NavidSheibani

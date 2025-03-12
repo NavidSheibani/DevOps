@@ -13,6 +13,6 @@ done
 
 
 ######
-#This script ensures a container restarts if it crashes and shows its logs.
-#NavidSheibani
+# This script ensures a container restarts if it crashes and shows its logs.
+# Author : NavidSheibani
 ######

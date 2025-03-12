@@ -8,7 +8,7 @@ docker run -d --name "$CONTAINER_NAME" "$IMAGE_NAME"
 echo "$CONTAINER_NAME restarted successfully!"
 
 ######
-#This script stops and removes a container before recreating it.
-#Ensures a fresh start without leaving stopped containers behind.
-#NavidSheibani
+# This script stops and removes a container before recreating it.
+# Ensures a fresh start without leaving stopped containers behind.
+# Author : NavidSheibani
 ######
