@@ -1,0 +1,153 @@
+
+
+###  NFS (Network File System) in Linux  ###
+
+NFS allows file sharing between Linux systems over a network.
+Follow these steps to set up NFS Server and NFS Client on Ubuntu/Debian-based systems.
+
+--------
+
+# Step 1: Install NFS Server
+
+On the NFS Server Machine :
+
+$ sudo apt update && sudo apt install nfs-kernel-server -y
+
+
+--------
+
+# Step 2: Create and Configure the Shared Directory
+
+1- Create a directory to share (e.g., /mnt/nfs_share):
+
+$ sudo mkdir -p /mnt/nfs_share
+
+2- Set appropriate permissions:
+
+$ sudo chown -R nobody:nogroup /mnt/nfs_share
+$ sudo chmod 777 /mnt/nfs_share
+
+3- Edit the NFS exports file to define share permissions:
+
+$ sudo nano /etc/exports
+# add this line : 
+
+/mnt/nfs_share 192.168.1.0/24(rw,sync,no_subtree_check)
+
+that its means :
+# 192.168.1.0/24 → Allows access to all clients in this subnet
+# rw → Read and write permissions
+# sync → Ensures changes are written before the client access
+# no_subtree_check → Improves performance
+
+4- Apply the export settings:
+
+$ sudo exportfs -a
+
+
+--------
+
+# Step 3: Start and Enable the NFS Service
+
+$ sudo systemctl restart nfs-kernel-server
+$ sudo systemctl enable nfs-kernel-server
+
+
+--------
+
+# Step 4: Configure Firewall on NFS Server
+If UFW (Uncomplicated Firewall) is enabled, allow NFS traffic:
+
+$ sudo ufw allow from 192.168.1.0/24 to any port nfs
+$ sudo ufw reload
+
+
+--------
+
+# Step 5: Install NFS Client (On the Client Machine)
+
+On the NFS Client Machine
+
+1- Install the NFS client package:
+
+$ sudo apt install nfs-common -y
+
+
+--------
+
+# Step 6: Mount the NFS Share on Client
+
+1- Create a mount point:
+
+$ sudo mkdir -p /mnt/nfs_client
+
+2- Mount the NFS share manually:
+
+$ sudo mount 192.168.1.100:/mnt/nfs_share /mnt/nfs_client
+
+3- Verify the mount:
+
+$ df -h | grep nfs
+
+
+--------
+
+# Step 7: Configure Permanent Mount (Optional)
+
+To make the mount persistent after reboot:
+
+1- Edit the /etc/fstab file:
+
+$ sudo nano /etc/fstab
+
+2- Add this line at the end:
+
+192.168.1.100:/mnt/nfs_share /mnt/nfs_client nfs defaults 0 0
+
+3- Test the fstab entry:
+
+$ sudo mount -a
+
+
+--------
+
+# Step 8: Test File Sharing
+
+On the server:
+
+$ echo "Hello from NFS Server" | sudo tee /mnt/nfs_share/test.txt
+
+
+On the client:
+
+$ cat /mnt/nfs_client/test.txt
+
+
+If the text appears on the client, NFS is working!
+
+
+--------
+
+# You now have an NFS Server sharing files with a Linux Client.
+# Author : NavidSheibani
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
