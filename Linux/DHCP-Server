@@ -1,0 +1,142 @@
+
+
+####  DHCP (Dynamic Host Configuration Protocol) Server ####
+Configuring a DHCP (Dynamic Host Configuration Protocol) Server on Linux involves installing the DHCP server software,
+configuring the DHCP settings, and starting the service.
+Below is a step-by-step guide to setting up a DHCP server on Ubuntu or Debian-based Linux systems.
+
+
+# Step 1: Install the DHCP Server
+
+$ sudo apt update
+$ sudo apt install isc-dhcp-server -y
+
+--------
+
+# Step 2: Configure the DHCP Server
+
+1- Identify the Network Interface
+   Determine the interface where the DHCP server will run:
+
+$ ip a
+
+# For example, if your interface is eth0, you need to set it in the DHCP configuration.
+
+
+2- Edit the DHCP Server Configuration File
+   Open the main DHCP configuration file:
+
+$ sudo nano /etc/dhcp/dhcpd.conf
+
+Modify the configuration to define a subnet and IP address range:
+
+# Define the subnet and range
+subnet 192.168.1.0 netmask 255.255.255.0 {
+  range 192.168.1.100 192.168.1.200; # IP range for clients
+  option routers 192.168.1.1;        # Default gateway
+  option domain-name-servers 8.8.8.8, 8.8.4.4; # DNS servers
+  option domain-name "example.com";  # Domain name
+  default-lease-time 600;            # Default lease time (seconds)
+  max-lease-time 7200;               # Max lease time (seconds)
+}
+
+# Static IP assignment (Optional)
+host myserver {
+  hardware ethernet 00:1A:2B:3C:4D:5E;
+  fixed-address 192.168.1.50;
+}
+
+Save and exit.
+
+
+--------
+
+# Step 3: Set the Interface for DHCP
+
+Edit the DHCP default settings file:
+
+$ sudo nano /etc/default/isc-dhcp-server
+
+# Find the line:
+
+INTERFACESv4=""
+
+# Modify it to specify your network interface (e.g., eth0):
+
+INTERFACESv4="eth0"
+
+
+Save and exit.
+
+--------
+
+# Step 4: Start and Enable the DHCP Service
+
+$ sudo systemctl restart isc-dhcp-server
+$ sudo systemctl enable isc-dhcp-server
+
+--------
+
+# Step 5: Verify the DHCP Service
+
+
+Check if the DHCP service is running:
+
+$ sudo systemctl status isc-dhcp-server
+
+Check for active leases:
+
+$ cat /var/lib/dhcp/dhcpd.leases
+
+
+--------
+
+# Step 6: Allow DHCP Traffic Through Firewall
+
+If you have UFW (Uncomplicated Firewall) enabled, allow DHCP traffic:
+
+$ sudo ufw allow 67/udp
+$ sudo ufw allow 68/udp
+$ sudo ufw reload
+
+
+--------
+
+# Step 7: Testing the DHCP Server
+
+1- From a client machine (another Linux or Windows device), configure the network settings to obtain an IP address automatically via DHCP.
+2- Check if the client receives an IP address using:
+
+on Linux -> $ ip a
+on Windows -> $ ipconfig /all
+
+
+--------
+
+# Troubleshooting
+
+If the service fails to start, check logs:
+
+$ sudo journalctl -u isc-dhcp-server
+
+Check DHCP leases:
+
+$ cat /var/lib/dhcp/dhcpd.leases
+
+--------
+
+# You now have a fully configured DHCP server on Linux.
+# Clients on your network will automatically receive IP addresses from the DHCP range you defined. 
+# Author : NavidSheibani
+
+
+
+
+
+
+
+
+
+
+
+
