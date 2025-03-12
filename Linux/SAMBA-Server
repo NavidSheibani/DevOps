@@ -1,0 +1,162 @@
+
+
+####  Samba File Server on Linux  ####
+
+Samba allows file sharing between Linux and Windows systems using the SMB protocol.
+Follow these steps to set up a Samba Server and configure Windows/Linux clients.
+
+--------
+
+# Step 1: Install Samba on Linux
+
+On the Samba Server (Linux)
+
+$ sudo apt update && sudo apt install samba -y
+
+Check if Samba is installed and running:
+
+$ smbd --version
+$ sudo systemctl status smbd
+
+
+--------
+
+# Step 2: Create a Shared Directory
+
+Create a directory for sharing and Set permissions (allow all users to access):
+
+$ sudo mkdir -p /srv/samba/share
+$ sudo chown -R nobody:nogroup /srv/samba/share
+$ sudo chmod -R 777 /srv/samba/share
+
+
+--------
+
+# Step 3: Configure Samba
+
+$ sudo nano /etc/samba/smb.conf
+
+Add the following lines at the bottom:
+
+[SharedFolder]
+comment = Samba Shared Folder
+path = /srv/samba/share
+browsable = yes
+writable = yes
+guest ok = yes
+read only = no
+create mask = 0777
+directory mask = 0777
+force user = nobody
+
+
+Save and exit.
+
+
+--------
+
+#Step 4: Restart Samba Service
+
+$ sudo systemctl restart smbd
+$ sudo systemctl enable smbd
+
+
+--------
+
+# Step 5: Allow Samba Through Firewall
+
+$ sudo ufw allow samba
+$ sudo ufw reload
+
+
+
+--------
+
+# Step 6: Access the Samba Share
+
+1- From a Windows Client
+
+   Press Win + R, type \\<Samba_Server_IP> (e.g., \\192.168.1.100), and press Enter.
+
+   You should see the shared folder.
+
+
+2- From a Linux Client
+
+    Install Samba client:
+
+    $ sudo apt install smbclient cifs-utils -y
+
+    List available shares:
+
+    $ smbclient -L //<Samba_Server_IP> -N
+
+    Mount the share:
+
+    $ sudo mount -t cifs //<Samba_Server_IP>/SharedFolder /mnt -o guest
+
+
+
+--------
+
+# Step 7: Configure User-Based Authentication (Optional)
+
+If you want only specific users to access the share:
+
+1- Create a Samba user (must be a system user):
+
+$ sudo adduser sambauser
+$ sudo smbpasswd -a sambauser
+
+2- Modify /etc/samba/smb.conf to require authentication:
+
+[PrivateShare]
+comment = Private Share
+path = /srv/samba/private
+valid users = sambauser
+browsable = yes
+writable = yes
+create mask = 0700
+directory mask = 0700
+
+
+3- Restart Samba:
+
+$ sudo systemctl restart smbd
+
+
+--------
+
+# Step 8: Auto-Mount Samba Share on Linux (Optional)
+
+To mount Samba automatically on boot:
+
+$ sudo nano /etc/fstab
+
+and add this line ::
+
+//<Samba_Server_IP>/SharedFolder /mnt cifs username=sambauser,password=yourpassword,iocharset=utf8,sec=ntlm 0 0
+
+
+Mount all fstab entries:
+
+sudo mount -a
+
+
+
+
+--------
+
+# Step 9: Testing Samba
+
+1- From Windows: Open \\192.168.1.100 in File Explorer.
+
+2- From Linux: Run smbclient -L //<Samba_Server_IP> -U sambauser.
+
+
+--------
+
+# Your Samba Server is now up and running!
+# You can share files between Linux and Windows clients.
+# Author : NavidSheibani
+
