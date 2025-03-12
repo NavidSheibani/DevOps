@@ -1,0 +1,165 @@
+
+# Setting up an LDAP (Lightweight Directory Access Protocol) Server in Linux involves installing and configuring OpenLDAP,
+# creating a directory structure, and setting up authentication.
+# Here’s a step-by-step guide to configuring LDAP on a Ubuntu or Debian-based Linux system.
+
+--------
+
+# Step 1: Install OpenLDAP Server and Utilities
+
+$ sudo apt update
+$ sudo apt install slapd ldap-utils
+
+# During installation, you'll be prompted to set an administrator password for LDAP.
+# Verify the installation
+$ slapd -V
+
+--------
+
+# Step 2: Configure OpenLDAP
+
+$ sudo dpkg-reconfigure slapd
+
+Omit OpenLDAP server configuration? → No
+DNS domain name → example.com (or your domain)
+Organization name → Example Inc.
+Administrator password → (set a strong password)
+Database backend → MDB (recommended)
+Remove the database when slapd is purged? → No
+Move old database? → Yes
+Allow LDAPv2? → No
+
+
+# Check if LDAP is running
+$ sudo systemctl status slapd
+
+--------
+
+# Step 3: Verify the LDAP Server
+
+$ ldapsearch -x -LLL -H ldap:/// -b dc=example,dc=com
+
+# If LDAP is correctly set up, it should return the directory structure.
+
+
+-------
+
+# Step 4: Install and Configure LDAP Client (Optional)
+
+#If you need to connect a client machine to the LDAP server:
+
+$ sudo apt install libnss-ldap libpam-ldap ldap-utils nslcd
+
+# During installation, enter:
+
+LDAP Server URI: ldap://your_ldap_server
+Distinguished Name (DN): dc=example,dc=com
+LDAP version: 3
+Authentication: LDAP account for root
+
+
+# To test authentication:
+$ getent passwd
+
+--------
+
+# Step 5: Create LDAP Users and Groups
+
+# Create an LDIF file for the organization structure
+
+$ nano base.ldif
+
+Add the following content:
+
+dn: ou=people,dc=example,dc=com
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=example,dc=com
+objectClass: organizationalUnit
+ou: groups
+
+# Apply the changes:
+
+$ ldapadd -x -D "cn=admin,dc=example,dc=com" -W -f base.ldif
+
+
+# Create a User
+
+$ nano user.ldif
+
+dn: uid=navidsheibani,ou=people,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: Navid Sheibani
+sn: Sheibani
+uid: navidsheibani
+uidNumber: 1001
+gidNumber: 1001
+homeDirectory: /home/navidsheibani
+loginShell: /bin/bash
+userPassword: {SSHA}hashed_password_here
+
+
+# Generate a password hash:
+$ slappasswd
+# Use the generated hash in the userPassword field.
+
+
+# Add the user to LDAP
+$ ldapadd -x -D "cn=admin,dc=example,dc=com" -W -f user.ldif
+
+
+--------
+
+# Step 6: Configure LDAP Authentication (PAM & NSS)
+
+# Edit /etc/nsswitch.conf and update:
+passwd: compat ldap
+group: compat ldap
+shadow: compat ldap
+
+# Restart the services:
+$ sudo systemctl restart nscd nslcd
+
+# Verify authentication:
+$ getent passwd navidsheibani
+
+If it returns the user details, LDAP authentication is working.
+
+
+--------
+
+# Step 7: Enable TLS for Security (Optional but Recommended)
+
+# Generate an SSL certificate:
+
+$ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/ldap.key -out /etc/ssl/certs/ldap.crt
+
+# Configure OpenLDAP to use TLS by editing /etc/ldap/ldap.conf:
+
+$ TLS_CACERT /etc/ssl/certs/ldap.crt
+
+$ sudo systemctl restart slapd
+
+
+
+--------
+
+# Step 8: Testing and Troubleshooting
+
+$ ldapwhoami -x -D "cn=admin,dc=example,dc=com" -W
+
+# If any issues arise, check the logs:
+
+$ sudo journalctl -u slapd
+
+--------
+
+This guide sets up an LDAP server, configures authentication, and allows clients to connect.
+You can extend it further by integrating LDAP with Samba for file sharing, FreeIPA for centralized authentication,
+or configuring a GUI tool like phpLDAPadmin.
+# Author : NavidSheibani
+
+
