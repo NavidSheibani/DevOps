@@ -1,0 +1,156 @@
+
+######     nftables Firewall Configuration for a Production Server     ######
+
+This setup secures a Linux production server by:
+✅ Allowing only necessary services (SSH, HTTP, HTTPS)
+✅ Blocking all unauthorized traffic
+✅ Enabling logging for security monitoring
+✅ Implementing rate limiting to prevent brute-force attacks
+✅ Setting up NAT for outbound internet access
+
+
+# Create a New nftables Configuration
+First, flush existing rules:
+$ sudo nft flush ruleset
+
+Now, create a new ruleset:
+$ sudo nano /etc/nftables.conf
+
+
+------
+
+# Define the nftables Ruleset
+Copy and paste the following secure firewall ruleset:
+
+#!/usr/sbin/nft -f
+# Create a new table
+table inet firewall {
+
+    # Define input chain
+    chain input {
+        type filter hook input priority 0;
+
+        # Accept traffic from the loopback interface
+        iifname lo accept
+
+        # Accept established and related connections
+        ct state established,related accept
+
+        # Allow SSH (with rate limiting)
+        ip protocol tcp dport 22 ct state new limit rate 3/minute accept
+
+        # Allow HTTP and HTTPS
+        ip protocol tcp dport { 80, 443 } accept
+
+        # Allow ICMP (ping)
+        ip protocol icmp accept
+
+        # Drop invalid packets
+        ct state invalid drop
+
+        # Log and drop all other incoming traffic
+        log prefix "nftables blocked: " group 0
+        drop
+    }
+
+    # Define output chain
+    chain output {
+        type filter hook output priority 0;
+        accept  # Allow all outgoing traffic
+    }
+
+    # Define forward chain (for NAT)
+    chain forward {
+        type filter hook forward priority 0;
+        drop  # Disable forwarding by default
+    }
+
+    # NAT Table (Masquerading for outbound internet access)
+    table ip nat {
+        chain postrouting {
+            type nat hook postrouting priority 100;
+            oifname "eth0" masquerade
+        }
+    }
+}
+
+
+
+-------
+
+# Apply and Save the Configuration
+After saving the file, restart nftables:
+$ sudo systemctl restart nftables
+
+
+Enable nftables at boot:
+$ sudo systemctl enable nftables
+
+
+Verify the loaded rules:
+$ nft list ruleset
+
+
+-------
+
+# Testing the Firewall
+
+- Test Allowed Services
+  Try SSH, HTTP, and HTTPS from another machine:
+
+$ nc -zv <server-ip> 22     # SSH
+$ nc -zv <server-ip> 80     # HTTP
+$ nc -zv <server-ip> 443    # HTTPS
+
+- Test Blocked Services
+  Attempt a blocked port (e.g., FTP):
+
+$ nc -zv <server-ip> 21
+
+
+- Check Logs for Blocked Traffic: 
+$ sudo journalctl -k | grep "nftables blocked"
+
+
+
+✅ SSH rate limiting (3 connections per minute)
+✅ Allows only necessary services (HTTP/HTTPS)
+✅ Logs & drops unauthorized access attempts
+✅ NAT masquerading for outbound internet
+
+# Author : NavidSheibani
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
