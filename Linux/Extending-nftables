@@ -1,0 +1,655 @@
+
+######      Extending nftables with Intrusion Detection & Cloud Integration      ######
+
+To enhance your production firewall, we will integrate:
+- Intrusion Detection System (IDS) –> Detect malicious activity
+- Cloud Security Logging –> Monitor firewall logs remotely
+- Automated Threat Blocking –> Block attackers dynamically
+
+
+# Intrusion Detection System (IDS) with Suricata
+Suricata is a powerful IDS/IPS that detects attacks (e.g., port scans, brute force, malware traffic).
+
+# Install Suricata
+
+$ sudo apt update && sudo apt install -y suricata
+
+# Enable Suricata to Monitor Traffic
+$ sudo nano /etc/suricata/suricata.yaml
+
+Find nfqueue: and enable it:
+
+nfqueue:
+  mode: accept
+  batchcount: 20
+  fail-open: yes
+
+
+Restart Suricata:
+$ sudo systemctl restart suricata
+$ sudo systemctl enable suricata
+
+# Add an IDS Rule to Detect SSH Brute Force
+$ sudo nano /etc/suricata/rules/local.rules
+Add:
+
+alert tcp any any -> any 22 (msg:"SSH brute force detected"; flags:S; threshold:type threshold, track by_src, count 5, seconds 60; sid:1000001;)
+
+
+# Update Suricata:
+
+$ sudo suricata-update
+$ sudo systemctl restart suricata
+
+# Check for Alerts
+$ sudo tail -f /var/log/suricata/fast.log
+
+
+-------
+
+# Cloud Security Logging with Remote Monitoring
+
+For cloud integration, we will:
+- Send firewall logs to a remote logging server
+- Monitor logs in Grafana or ELK Stack
+
+# Install rsyslog (If Not Installed)
+$ sudo apt install -y rsyslog
+
+# Configure Remote Logging
+$ sudo nano /etc/rsyslog.conf
+
+Add at the bottom:
+
+*.* @@remote-log-server.example.com:514
+
+Replace remote-log-server.example.com with your actual logging server.
+
+$ sudo systemctl restart rsyslog
+
+# Verify Logs Are Being Sent
+$ logger "Test log message"
+
+
+
+------- 
+
+# Automatic Threat Blocking with CrowdSec
+CrowdSec is a collaborative threat intelligence tool that blocks malicious IPs dynamically.
+
+# Install CrowdSec
+$ curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash
+$ sudo apt install -y crowdsec
+
+# Enable nftables Integration
+$ sudo apt install -y crowdsec-firewall-bouncer-nftables
+
+# Check Active Threats
+$ sudo cscli metrics
+
+
+-------
+
+#######      Visualizing nftables Firewall Logs in Grafana      ######
+
+# Author : NavidSheibani
+
+To monitor firewall activity in Grafana, we will:
+- Collect logs with rsyslog
+- Store logs in Prometheus or Loki
+- Visualize logs in Grafana
+
+------ 
+
+# Configure Firewall Logging
+To send nftables logs to rsyslog:
+
+# Modify nftables Rules to Enable Logging
+$ sudo nano /etc/nftables.conf
+
+Add logging to the input chain:
+
+table inet firewall {
+    chain input {
+        type filter hook input priority 0;
+        
+        # Accept SSH, HTTP, HTTPS
+        ip protocol tcp dport { 22, 80, 443 } accept
+
+        # Log and drop everything else
+        log prefix "nftables blocked: " group 0
+        drop
+    }
+}
+
+
+Save and apply:
+$ sudo systemctl restart nftables
+
+
+-------
+
+# Install and Configure rsyslog
+
+# Install rsyslog
+$ sudo apt install -y rsyslog
+
+
+# Enable Logging for nftables
+Edit /etc/rsyslog.conf:
+$ sudo nano /etc/rsyslog.conf
+Add:
+if $msg contains "nftables blocked" then /var/log/nftables.log
+& stop
+
+
+# Restart rsyslog:
+$ sudo systemctl restart rsyslog
+
+# Verify Logs Are Being Captured
+$ sudo tail -f /var/log/nftables.log
+
+"You should see blocked packets logged."
+
+
+
+-------
+
+# Set Up Grafana with Loki
+- Install Promtail & Loki
+$ sudo apt install -y docker docker-compose
+
+- Create a Loki & Promtail setup:
+$ mkdir /opt/loki && cd /opt/loki
+$ nano docker-compose.yml
+then paste this : 
+
+version: '3.8'
+
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: always
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    restart: always
+
+Save and start:
+$ docker-compose up -d
+
+
+-------
+
+# Configure Promtail to Read Firewall Logs
+
+- Edit the Promtail configuration:
+$ docker exec -it promtail nano /etc/promtail/config.yml
+Add:
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: "nftables_logs"
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: "nftables"
+          host: "my-server"
+          __path__: /var/log/nftables.log
+
+
+
+# Restart Promtail:
+$ docker restart promtail
+
+
+
+-------
+
+# Add Loki as a Data Source in Grafana
+
+- Open Grafana (http://your-server-ip:3000)
+- Login (default: admin/admin)
+- Go to Configuration → Data Sources
+- Click Add data source → Loki
+- Set URL: http://loki:3100 and click Save & Test
+
+
+
+-------
+
+# Create a Firewall Dashboard
+
+- Go to Dashboards → New Dashboard
+- Click Add a Panel
+- Select Loki Query:
+    {job="nftables"}
+
+- Click Run Query
+- Customize charts, tables, and alerts
+- Save the Dashboard ✅
+
+
+
+
+-------
+
+#######       Setting Up Alerts for Suspicious Traffic in Grafana      ###### 
+
+# Author : NavidSheibani
+
+To monitor firewall activity and receive alerts (via Telegram, Email, or Slack), follow these steps:
+- Detect brute-force attacks & port scans
+- Send alerts for suspicious activity
+- Integrate with Telegram, Email, or Slack
+
+# Define Suspicious Traffic in Grafana
+We will create alerts for:
+- Too many blocked requests from one IP (possible attack)
+- High SSH connection attempts (brute-force attempt)
+
+
+# Enable Alerting in Grafana
+- Go to Grafana → http://your-server-ip:3000
+- Go to Alerts & Notifications → Alert Rules
+- Click "Create Alert Rule"
+
+
+# Configure Alert Conditions
+- Alert for High Blocked Requests:
+    Click "Add Query"
+    Enter this Loki Query:
+    count_over_time({job="nftables"} |~ "nftables blocked" [5m])
+
+- Set Threshold:
+    Condition: WHEN > 50 blocked requests in 5 minutes
+    Action: Trigger alert
+
+
+- Alert for SSH Brute Force:
+    Click "Add Query"
+    Enter this Loki Query:
+    count_over_time({job="nftables"} |~ "dport=22" [5m]) > 10
+
+- Set Threshold:
+    Condition: > 10 SSH attempts in 5 minutes
+    Action: Trigger alert
+
+
+
+-------
+
+# Set Up Telegram Alerts
+
+Get Your Telegram Bot Token::
+    - Open Telegram and search "BotFather"
+    - Send /newbot and follow the instructions
+    - Copy your bot token
+
+Get Your Chat ID::
+    - Open this URL (replace TOKEN with your bot token):
+      https://api.telegram.org/bot<TOKEN>/getUpdates
+
+Find "chat":{"id": and copy your Chat ID
+
+
+# Add Telegram in Grafana
+- Go to Alerts → Notification Policies
+- Click "New Contact Point" → Telegram
+- Enter your Bot Token & Chat ID
+- Save & Test ✅
+
+
+
+-------
+
+# Set Up Email or Slack Alerts
+
+For Email:
+- Go to Alerts → Notification Policies
+- Click "New Contact Point" → Email
+- Enter SMTP Server and Recipient Email
+
+For Slack:
+- Go to Alerts → Notification Policies
+- Click "New Contact Point" → Slack
+- Paste your Webhook URL
+
+
+-------
+
+# Activate & Test Alerts
+
+Save the Alert Rules
+Try SSH brute force simulation:
+
+for i in {1..20}; do ssh user@your-server-ip; done
+
+
+"You should receive a Telegram alert"
+
+
+
+
+-------
+
+#######       Auto-Ban Attackers Using Fail2Ban + nftables      ######
+
+# Author : NavidSheibani
+
+Fail2Ban scans logs (e.g., SSH, firewall) and blocks attackers dynamically.
+
+$ sudo apt update && sudo apt install -y fail2ban
+
+# Enable nftables Support
+Create a new jail configuration:
+
+$ sudo nano /etc/fail2ban/jail.local
+Add::
+
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+backend = auto
+banaction = nftables-multiport
+
+[nftables-attackers]
+enabled = true
+filter = nftables
+logpath = /var/log/nftables.log
+maxretry = 10
+
+- Save and exit.
+
+
+
+-------
+
+# Create a Filter for nftables Logs
+Fail2Ban needs to recognize blocked requests in nftables.log.
+
+Create a new filter:
+
+$ sudo nano /etc/fail2ban/filter.d/nftables.conf
+- Add::
+
+[Definition]
+failregex = nftables blocked: IN=.* SRC=<HOST> DST=.* PROTO=.* 
+ignoreregex =
+
+
+- Save and exit.
+
+$ sudo systemctl restart fail2ban
+$ sudo systemctl enable fail2ban
+
+# Check Running Jails
+$ sudo fail2ban-client status
+
+Status
+|- Number of jail: 1
+`- Jail list: nftables-attackers
+
+
+-------
+
+#  Test Auto-Ban
+
+# Try sending 10 blocked requests to trigger a ban:
+$ for i in {1..10}; do curl http://your-server-ip:9999; done
+
+# Now check if Fail2Ban blocked the IP:
+$ sudo fail2ban-client status nftables-attackers
+
+"You should see the banned IP under Banned IP list."
+
+
+
+-------
+
+# Unban an IP (If Needed)
+
+- To manually unban an IP::
+
+$ sudo fail2ban-client set nftables-attackers unbanip <BANNED-IP>
+
+
+
+
+
+------- 
+
+#######      GeoIP Filtering with nftables – Block or Allow Countries     ######
+# Author : NavidSheibani
+
+# Install Required Packages
+We need the GeoIP database and xtables-addons for nftables GeoIP support.
+
+- Install Dependencies::
+    $ sudo apt update
+    $ sudo apt install -y xtables-addons-common geoip-database-extra
+
+- Download Latest GeoIP Database
+    $ sudo mkdir -p /usr/share/xt_geoip
+    $ sudo wget -O /usr/share/xt_geoip/GeoLite2-Country.mmdb \
+    "https://git.io/GeoLite2-Country.mmdb"
+
+
+
+-------
+
+# Configure nftables to Block Specific Countries
+Modify your nftables configuration to block or allow traffic based on country.
+
+# Open nftables.conf
+$ sudo nano /etc/nftables.conf
+
+
+# Block Specific Countries
+  Add this rule inside the input chain:
+
+table inet firewall {
+    chain input {
+        type filter hook input priority 0;
+
+        # Allow SSH, HTTP, HTTPS
+        ip protocol tcp dport {22, 80, 443} accept
+
+        # Block specific countries (Example: China & Russia)
+        ip saddr @china_russia drop
+    }
+    
+    set china_russia {
+        type ipv4_addr
+        flags interval
+        elements = {
+            1.0.1.0/24,  # Example China IP range
+            2.56.96.0/19  # Example Russia IP range
+        }
+    }
+}
+
+############################################### 
+# How to get country-specific IP ranges?      # 
+# Use IPInfo or download official lists from: #
+# 🔗 https://www.ipdeny.com/ipblocks/         #
+#    Author : NavidSheibani                   #
+###############################################
+
+
+
+-------
+
+# Apply and Verify the Rules
+- Restart nftables
+$ sudo systemctl restart nftables
+
+
+# Check If Rules Are Applied
+$ sudo nft list ruleset
+
+
+# Test GeoIP Blocking
+- To check if a country is blocked::
+$ curl --interface <blocked-ip> http://your-server-ip
+
+
+If it's blocked, you should see:
+" curl: (7) Failed to connect to your-server-ip "
+
+
+
+
+
+-------
+
+# Allow-Only Specific Countries
+Instead of blocking, you can allow only certain countries (e.g., Iran, Germany):
+
+table inet firewall {
+    chain input {
+        type filter hook input priority 0;
+
+        # Allow traffic only from Iran & Germany
+        ip saddr @iran_germany accept
+        drop
+    }
+    
+    set iran_germany {
+        type ipv4_addr
+        flags interval
+        elements = {
+            5.22.192.0/19,  # Iran IP range
+            78.31.64.0/19   # Germany IP range
+        }
+    }
+}
+
+
+
+
+
+######      Automate GeoIP Updates for nftables      #######
+
+# Author : NavidSheibani
+
+To ensure your firewall always blocks the latest IP ranges, we'll:
+- Automatically update GeoIP databases
+- Integrate updated lists into nftables
+- Schedule automatic updates with cron
+
+# Create a Script to Update GeoIP Lists
+We need to download country-specific IP ranges from IPdeny and update nftables.
+
+# Create the Update Script
+$ sudo nano /usr/local/bin/update-geoip.sh
+
+Adding this ::
+
+#!/bin/bash
+# Define countries to block (Modify as needed)
+COUNTRIES="cn ru kp sy"  # China, Russia, North Korea, Syria
+
+# Set download directory
+GEOIP_DIR="/etc/nftables/geoip"
+mkdir -p "$GEOIP_DIR"
+
+# Download the latest country IP lists
+for COUNTRY in $COUNTRIES; do
+    wget -O "$GEOIP_DIR/$COUNTRY.zone" "https://www.ipdeny.com/ipblocks/data/countries/$COUNTRY.zone"
+done
+
+# Generate nftables rules
+NFT_RULES="/etc/nftables/geoip.nft"
+echo "table inet geoip {" > "$NFT_RULES"
+echo "    set blocked_countries {" >> "$NFT_RULES"
+echo "        type ipv4_addr; flags interval;" >> "$NFT_RULES"
+echo "        elements = {" >> "$NFT_RULES"
+
+# Add IP ranges to the set
+for COUNTRY in $COUNTRIES; do
+    sed "s/^/            /" "$GEOIP_DIR/$COUNTRY.zone" >> "$NFT_RULES"
+done
+
+echo "        }" >> "$NFT_RULES"
+echo "    }" >> "$NFT_RULES"
+echo "}" >> "$NFT_RULES"
+
+# Restart nftables to apply changes
+nft -f /etc/nftables/geoip.nft
+
+
+
+Save & exit.
+
+$ sudo chmod +x /usr/local/bin/update-geoip.sh
+
+
+
+-------
+
+# Schedule Automatic Updates with Cron
+$ sudo crontab -e
+0 2 * * * /usr/local/bin/update-geoip.sh >/dev/null 2>&1
+# This runs the script every day at 2 AM.
+
+
+-------
+
+# Integrate with nftables
+Modify your nftables.conf to block these countries:
+
+$ sudo nano /etc/nftables.conf
+Add this : 
+
+include "/etc/nftables/geoip.nft"
+
+table inet firewall {
+    chain input {
+        type filter hook input priority 0;
+
+        # Drop packets from blocked countries
+        ip saddr @blocked_countries drop
+    }
+}
+
+
+# Restart nftables to apply changes:
+$ sudo systemctl restart nftables
+
+
+
+------- 
+
+# Verify & Test
+
+# Check if GeoIP rules are applied
+$ sudo nft list ruleset
+
+
+# Test with a Blocked Country IP
+$ curl --interface <blocked-country-ip> http://your-server-ip
+
+
+It should be blocked ✅.
+
+
