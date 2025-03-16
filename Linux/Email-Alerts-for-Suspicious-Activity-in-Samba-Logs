@@ -1,0 +1,102 @@
+######      Configure Email Alerts for Suspicious Activity in Samba Logs      ######
+
+To enhance security, you can set up automated email alerts for suspicious Samba activity, such as:
+✅ Unauthorized access attempts 🚨
+✅ File deletions or modifications 🔍
+✅ Multiple failed login attempts 🚫
+
+
+# Install Required Packages
+On your Linux Samba server, install the following:
+
+$ sudo apt update
+$ sudo apt install postfix mailutils -y
+    postfix: Handles sending emails.
+    mailutils: Provides mail command for sending alerts.
+
+------
+
+# Configure Postfix for Email Sending
+Step 1: Open Postfix Configuration:
+$ sudo nano /etc/postfix/main.cf
+
+Step 2: Set SMTP Relay (if using Gmail)
+Add or modify these lines:
+
+relayhost = [smtp.gmail.com]:587
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+smtp_tls_security_level = encrypt
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
+Step 3: Store SMTP Credentials
+sudo nano /etc/postfix/sasl_passwd
+Add:
+
+[smtp.gmail.com]:587 your-email@gmail.com:your-email-password
+
+Step 4: Apply Configuration
+$ sudo postmap /etc/postfix/sasl_passwd
+$ sudo chmod 600 /etc/postfix/sasl_passwd
+$ sudo systemctl restart postfix
+
+
+-------
+
+# Create Samba Log Monitoring Script
+Now, set up a script to monitor Samba logs for suspicious activity and send email alerts.
+
+$ sudo nano /usr/local/bin/samba_alert.sh
+Paste the following script:
+
+#!/bin/bash
+
+LOGFILE="/var/log/syslog"
+ALERT_EMAIL="info@sheibani.dev"
+SUBJECT="🚨 Samba Security Alert 🚨"
+
+# Check for failed authentication attempts
+if grep -q "authentication failure" "$LOGFILE"; then
+    grep "authentication failure" "$LOGFILE" | tail -5 | mail -s "$SUBJECT: Authentication Failures" "$ALERT_EMAIL"
+fi
+
+# Check for file deletions
+if grep -q "unlink" "$LOGFILE"; then
+    grep "unlink" "$LOGFILE" | tail -5 | mail -s "$SUBJECT: Files Deleted" "$ALERT_EMAIL"
+fi
+
+# Check for multiple failed logins
+if grep -c "NT_STATUS_LOGON_FAILURE" "$LOGFILE" | awk '{if ($1 >= 5) print $1}'; then
+    echo "Multiple failed login attempts detected!" | mail -s "$SUBJECT: Multiple Failed Logins" "$ALERT_EMAIL"
+fi
+
+
+Save and exit
+$ sudo chmod +x /usr/local/bin/samba_alert.sh
+
+
+-------
+
+# Set Up a Cron Job for Automated Checks
+Edit crontab:
+
+$ sudo crontab -e
+Add the following line at the bottom:
+
+*/5 * * * * /usr/local/bin/samba_alert.sh
+
+This runs the script every 5 minutes to check Samba logs and send email alerts if necessary.
+
+
+-------
+
+# Test Email Alerts
+echo "Test Samba Alert" | mail -s "🚨 Samba Alert Test 🚨" info@sheibani.dev
+
+✅ Email alerts for failed logins and file deletions
+✅ Runs every 5 minutes via cron
+✅ Logs filtered to avoid spam alerts
+✅ Secure email sending using Postfix
+
+# Author : NavidSheibani
