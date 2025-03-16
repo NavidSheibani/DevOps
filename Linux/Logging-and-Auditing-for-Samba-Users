@@ -1,0 +1,183 @@
+
+######      Advanced Logging & Auditing for Samba Users      ######
+
+To ensure security and compliance, it's important to log and audit user access to Samba shares.
+This allows you to:
+✅ Monitor who accessed which files and when
+✅ Detect unauthorized access attempts
+✅ Maintain audit logs for security analysis
+
+
+-------
+
+# Enable Samba Audit Logging
+First, ensure that Samba is configured to log all access events.
+
+# Step 1: Modify Samba Configuration
+
+Edit the Samba configuration file:
+    $sudo nano /etc/samba/smb.conf
+
+Add the following under [global]:
+
+log level = 2
+log file = /var/log/samba/%m.log
+max log size = 10000
+
+This will:
+✅ Log events per machine (%m → machine name)
+✅ Limit log size to avoid excessive disk usage
+
+Save and exit
+
+# Step 2: Restart Samba
+$ sudo systemctl restart smbd winbind
+
+# Step 3: Check Logs
+
+Logs will be stored in:
+$ ls -lah /var/log/samba/
+
+To monitor logs in real-time:
+$ tail -f /var/log/samba/*.log
+
+
+
+-------
+
+# Enable VFS Audit Module for Detailed Logging
+
+Samba supports VFS (Virtual File System) modules, including full_audit,
+which logs detailed file operations.
+
+# Step 1: Enable the Full Audit Module
+Edit /etc/samba/smb.conf again:
+
+$ sudo nano /etc/samba/smb.conf
+
+Add the following inside your share definition (e.g., [SecureShare]):
+
+[SecureShare]
+    path = /srv/samba/secure
+    browseable = yes
+    writable = yes
+    valid users = @"EXAMPLE\Domain Users"
+    create mask = 0770
+    directory mask = 0770
+    
+    # Enable full audit logging
+    vfs objects = full_audit
+    full_audit:prefix = %u|%I|%m|%S
+    full_audit:success = mkdir rmdir write pwrite rename unlink
+    full_audit:failure = none
+    full_audit:facility = LOCAL1
+    full_audit:priority = NOTICE
+
+
+# Step 2: Restart Samba
+
+$ sudo systemctl restart smbd winbind
+
+# Step 3: Test Audit Logging
+
+Perform file operations like creating, modifying, or deleting files in the share.
+Then, check logs:
+
+$ sudo tail -f /var/log/syslog | grep smbd_audit
+
+Example log entry:
+    Mar 12 14:23:45 samba-server smbd_audit[1234]: navid|192.168.1.100|Win10-PC|SecureShare|mkdir|/srv/samba/secure/test_folder
+
+✅ User: navid
+✅ IP Address: 192.168.1.100
+✅ Machine: Win10-PC
+✅ Share: SecureShare
+✅ Action: mkdir (created a directory)
+
+
+-------
+
+# Configure Log Rotation (Prevent Disk Overflow)
+By default, Samba logs can grow large over time. Use logrotate to manage them.
+
+# Step 1: Create a Logrotate Config
+$ sudo nano /etc/logrotate.d/samba
+
+Add:
+
+/var/log/samba/*.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+    create 0640 root adm
+}
+
+✅ Rotates logs weekly
+✅ Keeps last 4 logs
+✅ Compresses old logs
+
+# Step 2: Test Log Rotation
+$ sudo logrotate -d /etc/logrotate.d/samba
+
+If it works fine, force rotation:
+
+$ sudo logrotate -f /etc/logrotate.d/samba
+
+
+
+-------
+
+# Monitor Samba Logs with a Centralized System (Optional)
+To integrate logs with monitoring tools like ELK (Elasticsearch, Logstash, Kibana)
+or Graylog, configure Samba to send logs to syslog.
+
+# Step 1: Edit Samba Config
+$ sudo nano /etc/samba/smb.conf
+
+Modify:
+
+log level = 2
+syslog = 1
+
+
+$ sudo systemctl restart smbd winbind
+
+# Step 2: Forward Logs to a Central Logging Server
+If using rsyslog, edit:
+
+$ sudo nano /etc/rsyslog.conf
+
+Add: 
+
+*.* @logserver.example.com:514
+
+then restart rsyslog 
+$ sudo systemctl restart rsyslog
+
+
+-------
+
+# Generate Audit Reports
+For compliance or security analysis, use grep or awk to filter logs.
+
+Example: Find all file deletions:
+$ grep "unlink" /var/log/syslog
+
+
+# Example: Find all file creations
+$ grep "mkdir" /var/log/syslog
+
+
+# Example: Get Samba logs for a specific user
+$ grep "navid" /var/log/syslog
+
+
+-------
+
+🔹 Detailed Samba logging enabled with full_audit
+🔹 Monitors user actions (create, delete, write, rename, etc.)
+🔹 Logs automatically rotated to prevent overflow
+🔹 Optionally forward logs to a centralized system (ELK, Graylog)
+# Author : NavidSheibani
