@@ -1,0 +1,222 @@
+
+######   Integrating Samba with Active Directory (AD) for Centralized Authentication   ######
+
+Integrating Samba with Active Directory (AD) allows centralized user authentication,
+making it possible to manage access rights using AD credentials. Samba will act as a domain member,
+allowing AD users to access shared resources.
+
+# Prerequisites
+✅ Linux Server (Ubuntu/Debian/RHEL)
+✅ Active Directory Domain Controller (Windows Server)
+✅ Samba Installed on Linux
+✅ Network Connectivity Between Linux Server & AD Server
+✅ A Domain Admin User for Joining the Linux Server to AD
+
+# Install Required Packages
+
+For Ubuntu/Debian:
+    $ sudo apt update
+    $ sudo apt install samba krb5-user winbind libnss-winbind libpam-winbind smbclient -y
+
+For RHEL/CentOS:
+    $ sudo yum install samba samba-common samba-winbind samba-winbind-clients krb5-workstation -y
+
+-------
+
+# Configure Kerberos Authentication
+
+Edit the Kerberos configuration file:
+    $ sudo nano /etc/krb5.conf
+
+
+Replace the content with:
+
+[libdefaults]
+    default_realm = EXAMPLE.COM
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+
+[realms]
+    EXAMPLE.COM = {
+        kdc = dc.example.com
+        admin_server = dc.example.com
+    }
+
+[domain_realm]
+    .example.com = EXAMPLE.COM
+    example.com = EXAMPLE.COM
+
+
+🔹 Replace EXAMPLE.COM with your AD domain name
+🔹 Replace dc.example.com with your AD server hostname
+
+
+# Test Kerberos Authentication
+$ kinit Administrator@EXAMPLE.COM
+
+
+# Enter the Administrator password. If successful, check the ticket:
+$ klist
+
+
+
+-------
+
+# Join Linux Server to AD
+
+# Edit Samba Configuration
+$ sudo nano /etc/samba/smb.conf
+
+
+Replace the content with:
+
+[global]
+    workgroup = EXAMPLE
+    security = ads
+    realm = EXAMPLE.COM
+    password server = dc.example.com
+    log file = /var/log/samba/%m.log
+    log level = 2
+    idmap config * : backend = tdb
+    idmap config * : range = 10000-99999
+    winbind use default domain = yes
+    winbind offline logon = yes
+    winbind enum users = yes
+    winbind enum groups = yes
+    template shell = /bin/bash
+
+
+Save and exit
+
+
+# Restart Services
+$ sudo systemctl restart smbd winbind
+$ sudo systemctl enable smbd winbind
+
+
+
+# Join the Linux Server to AD
+
+$ sudo net ads join -U Administrator
+
+Enter the Administrator password.
+Check if the system is a domain member:
+
+$ sudo net ads testjoin
+
+Expected output:
+
+Join is OK
+
+
+
+-------
+
+# Configure NSSwitch
+
+$ sudo nano /etc/nsswitch.conf
+
+Modify these lines:
+
+passwd: files winbind
+group: files winbind
+shadow: files
+
+Save and exit.
+
+# Restart services:
+
+sudo systemctl restart winbind
+
+sudo wbinfo -u    # List AD users
+sudo wbinfo -g    # List AD groups
+
+
+-------
+
+# Allow AD Users to Log In
+
+Edit PAM Configuration:
+
+$ sudo nano /etc/pam.d/common-session
+
+Add this line at the end:
+
+session required pam_mkhomedir.so skel=/etc/skel/ umask=0022
+
+# This ensures home directories are created for AD users.
+
+$ sudo systemctl restart winbind
+
+
+
+# Now, you can log in using an AD user:
+
+$ su - aduser
+
+
+-------
+
+# Configure Samba Share for AD Users
+
+Edit /etc/samba/smb.conf:
+
+$ sudo nano /etc/samba/smb.conf
+
+Add a secure share:
+
+[SecureShare]
+    path = /srv/samba/secure
+    browseable = yes
+    writable = yes
+    valid users = @"EXAMPLE\Domain Users"
+    create mask = 0770
+    directory mask = 0770
+
+
+Create the shared folder:
+
+$ sudo mkdir -p /srv/samba/secure
+$ sudo chown -R root:"Domain Users" /srv/samba/secure
+$ sudo chmod -R 770 /srv/samba/secure
+
+$ sudo systemctl restart smbd
+
+
+------- 
+
+# Access Samba Share from Windows
+
+Press Win + R and enter:
+
+\\linux-server-ip\SecureShare
+
+Log in with an AD user (EXAMPLE\username).
+You should now have access to the Samba share.
+
+
+-------
+
+# Verify AD Authentication
+
+Check if a specific AD user exists:
+    $ getent passwd aduser
+
+Expected output:
+    aduser:*:10500:10513::/home/aduser:/bin/bash
+
+
+--------
+Your Linux Samba server is now fully integrated with Active Directory. 
+✅ AD users can access Samba shares using their domain credentials.
+✅ Linux users can authenticate via Active Directory.
+
+# Author : NavidSheibani
+
+
+
+
+
+
+
+
