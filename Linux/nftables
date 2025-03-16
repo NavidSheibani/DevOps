@@ -1,0 +1,165 @@
+
+######      Complete Guide to nftables in Linux      ######
+
+nftables is the modern replacement for iptables, designed to provide a more efficient,
+flexible, and scalable firewall solution for Linux.
+It manages packet filtering, network address translation (NAT), and packet classification.
+
+------ 
+
+# Installing nftables
+
+# Most modern Linux distributions include nftables by default. To check if it's installed:
+$ nft --version
+
+# Install on Different Distros
+    # Debian/Ubuntu
+    $ sudo apt update && sudo apt install -y nftables
+
+    # CentOS/RHEL
+    $ sudo yum install -y nftables
+
+    # Arch Linux
+    $ sudo pacman -S nftables
+
+Enable and start the service:
+
+$ sudo systemctl enable --now nftables
+
+
+------
+
+# Basic Concepts in nftables
+Tables: Groups of rules (e.g., filter, nat).
+Chains: A sequence of rules within a table (e.g., input, output).
+Rules: Specific conditions and actions (e.g., allow/deny traffic).
+Sets: Lists of IPs, networks, or ports.
+Hooks: Attach chains to different packet processing stages.
+
+
+-------
+
+# Default nftables Configuration
+The default configuration file is:
+
+/etc/nftables.conf
+
+To reset to defaults:
+$ sudo systemctl restart nftables
+
+
+-------
+
+# Creating a Basic Firewall
+- Step 1: Define a Table and Chains
+
+$ sudo nft add table inet my_filter
+$ sudo nft add chain inet my_filter input { type filter hook input priority 0 \; }
+$ sudo nft add chain inet my_filter output { type filter hook output priority 0 \; }
+$ sudo nft add chain inet my_filter forward { type filter hook forward priority 0 \; }
+
+- Step 2: Add Rules to the Chains
+
+Allow SSH, HTTP, and Drop Everything Else:
+
+$ sudo nft add rule inet my_filter input ip saddr 192.168.1.0/24 accept
+$ sudo nft add rule inet my_filter input ip protocol tcp dport { 22, 80 } accept
+$ sudo nft add rule inet my_filter input drop
+ 
+- Step 3: Save and Apply the Rules
+$ sudo nft list ruleset > /etc/nftables.conf
+$ sudo systemctl restart nftables
+
+
+-------
+
+# Listing and Managing Rules
+List All Rules:
+$ nft list ruleset
+
+Delete a Rule:
+$ sudo nft delete rule inet my_filter input handle 3
+
+Flush (Clear) All Rules:
+$ sudo nft flush ruleset
+
+
+-------
+# Network Address Translation (NAT)
+
+- Step 1: Create a NAT Table
+$ sudo nft add table ip nat
+$ sudo nft add chain ip nat prerouting { type nat hook prerouting priority 0 \; }
+$ sudo nft add chain ip nat postrouting { type nat hook postrouting priority 100 \; }
+
+- Step 2: Set Up Masquerading (For Internet Access)
+$ sudo nft add rule ip nat postrouting oifname "eth0" masquerade
+
+- Step 3: Port Forwarding (Redirect Traffic)
+Forward HTTP traffic from WAN (eth0) to an internal server (192.168.1.100:80):
+
+$ sudo nft add rule ip nat prerouting iifname "eth0" tcp dport 80 dnat to 192.168.1.100:80
+
+
+
+-------
+
+# Advanced nftables Features
+
+- Creating IP Sets:
+Define an IP set to block multiple IPs:
+
+$ sudo nft add set inet my_filter blacklist { type ipv4_addr \; }
+$ sudo nft add element inet my_filter blacklist { 192.168.1.10, 192.168.1.11 }
+$ sudo nft add rule inet my_filter input ip saddr @blacklist drop
+
+
+- Logging and Monitoring Traffic:
+$ sudo nft add rule inet my_filter input log prefix "nftables: " group 0
+View logs:
+$ sudo journalctl -k | grep nftables
+
+
+- Rate Limiting Connections
+Limit SSH login attempts:
+
+$ sudo nft add rule inet my_filter input ip protocol tcp dport 22 limit rate 3/minute accept
+
+
+-------
+
+# Persistent Configuration
+To make rules persistent after a reboot:
+
+$ sudo nft list ruleset > /etc/nftables.conf
+$ sudo systemctl enable nftables
+
+
+-------
+
+✅ nftables is more powerful, scalable, and efficient than iptables.
+✅ Simplifies firewall rules while improving security.
+✅ Supports NAT, logging, and rate limiting with a modern rule syntax.
+
+# Author : NavidSheibani
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
