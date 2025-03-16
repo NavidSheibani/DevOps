@@ -1,0 +1,27 @@
+
+######      Automate IP Banning      ######
+
+If you want to automatically block repeated failed SSH attempts, use fail2ban:
+
+# installing:
+
+$ sudo apt install -y fail2ban
+$ sudo systemctl enable --now fail2ban
+
+
+# Create a jail rule:
+
+$ sudo nano /etc/fail2ban/jail.local
+
+Add :
+
+[sshd]
+enabled = true
+filter = sshd
+maxretry = 3
+bantime = 1h
+
+# Restart fail2ban:
+$ sudo systemctl restart fail2ban
+
+# Author : NavidSheibani
