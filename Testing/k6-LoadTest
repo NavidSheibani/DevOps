@@ -1,0 +1,105 @@
+
+# What is k6?
+
+k6 is an open-source load testing tool written in Go, designed for testing the performance of APIs,
+microservices, and websites. It allows you to simulate a lot of users interacting with your system
+and measure how it behaves under stress.
+
+You write tests in JavaScript, and k6 runs them efficiently from the command line or even in the cloud.
+
+
+# What can you test with k6?
+
+REST APIs (GET, POST, PUT, DELETE)
+
+Web applications
+
+Authentication flows (token, login)
+
+Microservices
+
+Performance under high traffic
+
+-------
+
+# A Simple Example
+Here’s a basic script.js that sends GET requests to an endpoint:
+
+import http from 'k6/http';
+import { sleep } from 'k6';
+
+export default function () {
+  http.get('https://example.com');
+  sleep(1); // Wait 1 second between iterations
+}
+
+
+Run it using:
+
+$ k6 run script.js
+
+-------
+
+# Simulating Load 
+You can define how many users (virtual users or VUs) and how long the test runs:
+
+$ k6 run --vus 50 --duration 30s script.js
+
+
+-------
+
+# Output and Results
+
+k6 gives you metrics like:
+
+Requests per second (RPS)
+
+Response time (min/avg/max/p95)
+
+Error rate
+
+Data transferred
+
+You’ll get these printed in your terminal after the test.
+
+
+-------
+
+# Advanced Features
+
+Load profiles (ramping up/down users)
+
+Thresholds (set conditions for test pass/fail)
+
+Checks (assertions)
+
+CSV/json output for metrics
+
+Integration with Grafana + InfluxDB for dashboards
+
+
+# Example with a check:
+
+
+import http from 'k6/http';
+import { check } from 'k6';
+
+export default function () {
+  const res = http.get('https://example.com');
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+  });
+}
+
+
+--------
+
+# Useful Scenarios
+
+CI/CD integration: Run tests automatically before deployment
+
+Baseline testing: What’s normal load for your app?
+
+Stress testing: What’s the max load before things break?
+
+Soak testing: Does it remain stable over long periods?
