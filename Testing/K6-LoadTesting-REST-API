@@ -1,0 +1,107 @@
+
+####    Scenario: Load Testing a REST API    ####
+
+step-by-step and build a real-world load test using k6
+
+Action	        Method	    URL
+Login   	    POST	    /api/login
+Get user data	GET	        /api/user
+Create post	    POST	    /api/posts
+
+We want to test how the server handles 50 users logging in and creating posts simultaneously.
+
+-------
+
+# Step 1: Script for Login + Create Post
+
+Here’s a full script script.js:
+
+
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export let options = {
+  vus: 50, // 50 virtual users
+  duration: '30s', // run for 30 seconds
+  thresholds: {
+    http_req_duration: ['p(95)<500'], // 95% of requests should complete under 500ms
+    http_req_failed: ['rate<0.01'], // <1% requests should fail
+  },
+};
+
+export default function () {
+  // Login
+  let loginRes = http.post('https://your-api.com/api/login', JSON.stringify({
+    username: 'testuser',
+    password: 'testpass',
+  }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  check(loginRes, {
+    'login status is 200': (res) => res.status === 200,
+  });
+
+  const token = loginRes.json('token');
+
+  // Use the token to access other endpoints
+  let authHeaders = {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  };
+
+  // Get user data
+  let userRes = http.get('https://your-api.com/api/user', authHeaders);
+  check(userRes, {
+    'fetched user data': (res) => res.status === 200,
+  });
+
+  // Create a new post
+  let postRes = http.post('https://your-api.com/api/posts', JSON.stringify({
+    title: 'Performance Test',
+    content: 'Testing API performance under load',
+  }), authHeaders);
+
+  check(postRes, {
+    'post created': (res) => res.status === 201,
+  });
+
+  sleep(1); // wait 1 second between iterations
+}
+
+
+
+-------
+
+# Step 2: Run the test
+
+$ k6 run script.js
+
+
+You’ll see output like:
+
+✓ login status is 200
+✓ fetched user data
+✓ post created
+
+http_req_duration........: avg=350ms  p(95)=480ms
+http_req_failed..........: 0.5%
+
+
+
+
+-------
+
+# Step 3: Optional - Monitor with Grafana
+
+If you want real-time dashboards:
+
+Set up InfluxDB + Grafana
+
+Export k6 metrics to InfluxDB using --out influxdb=http://localhost:8086/k6
+
+Build dashboards in Grafana using the k6 template
+
+# Author : NavidSheibani
