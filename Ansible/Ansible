@@ -1,0 +1,202 @@
+
+######      Ansible      ######
+
+# What is Ansible?
+
+Ansible is an open-source automation tool used for:
+
+- Configuration Management
+
+- Application Deployment
+
+- Infrastructure as Code (IaC)
+
+- Orchestration
+
+- Continuous Delivery
+
+# Key Characteristics:
+
+- Agentless: No software/agent needs to be installed on the managed nodes. It uses SSH or WinRM (for Windows).
+
+- Declarative & YAML-based: Uses simple YAML files called playbooks.
+
+- Idempotent: Running a playbook multiple times gives the same result (safe repeatability).
+
+- Python-powered: Written in Python and extensible using Python modules.
+
+
+--------
+
+# Core Components of Ansible
+
+- Inventory
+    A list of machines or groups of machines.
+    Format: INI or YAML
+
+    example : 
+
+    [webservers]
+    web1.example.com
+    web2.example.com
+
+    [dbservers]
+    db1.example.com
+
+
+- Modules
+    Ansible’s building blocks (e.g., apt, yum, copy, file, service, etc.)
+    You call these in tasks to perform actions.
+    example : 
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+
+- Tasks
+    A unit of action (uses modules).
+    Tasks are executed in order, top to bottom.
+
+
+- Playbooks
+    YAML files that describe the desired state of your infrastructure.
+    Contain plays, which map hosts to tasks.
+    example : 
+
+    - name: Configure web servers
+      hosts: webservers
+      become: true
+      tasks:
+        - name: Install Nginx
+          apt:
+            name: nginx
+            state: present
+
+
+- Roles
+    Way to organize playbooks into reusable units.
+    Structure:
+
+    roles/
+    ├── webserver/
+    │   ├── tasks/
+    │   │   └── main.yml
+    │   ├── handlers/
+    │   └── templates/
+
+
+- Variables
+    Allow dynamic content in playbooks.
+    Can be defined in:
+      Playbooks
+      Inventory
+      External variable files
+      Facts (auto-gathered data)
+
+    example :
+
+    vars:
+    app_name: myapp
+
+
+- Facts
+  Auto-gathered system information (RAM, OS, IP, etc.)
+  example : 
+
+  ansible_facts['distribution']
+
+
+- Handlers
+  Tasks triggered only when notified (used for restarting services).
+  example : 
+
+  - name: Restart nginx
+    service:
+      name: nginx
+      state: restarted
+    listen: restart nginx
+
+
+- Templates
+  Jinja2-based dynamic file generation.
+  example : 
+  - name: Create config
+    template:
+      src: config.j2
+      dest: /etc/myapp/config.conf
+
+
+
+---------
+
+
+# What Can You Automate with Ansible?
+
+- System Setup
+  . Installing software
+  . User/group management
+  . System hardening
+  . Managing services
+
+
+- Application Deployment
+  . Push code to servers
+  . Restart app services
+  . Update environment variables
+
+
+- Cloud Infrastructure
+  . Provision EC2, S3, RDS with ansible.builtin or community.aws collection
+
+
+- Containers & Kubernetes
+  . Deploy containers with docker_container module
+  . Use Ansible to manage Helm charts and Kubernetes manifests
+
+- Network Automation
+  . Configure switches/routers/firewalls
+  . Vendors supported: Cisco, Juniper, Arista, etc.
+
+
+
+-------
+
+# Ansible Collections & Galaxy
+
+' Ansible Galaxy ' is a community hub for sharing roles & collections.
+
+Example:
+$ ansible-galaxy install geerlingguy.nginx
+
+
+--------
+
+# Advanced Topics #
+
+# Loops and Conditionals
+  - name: Create multiple users
+    user:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - Navid
+      - Arshia
+      - pouria
+
+# Dynamic Inventory
+  . Pull inventory from cloud providers like AWS, GCP, or OpenStack dynamically.
+
+
+# Ansible Vault
+  . Encrypt sensitive variables (passwords, API keys).
+  example : 
+   $ ansible-vault encrypt secrets.yml
+   $ ansible-playbook --ask-vault-pass site.yml
+
+
+# Callback Plugins
+  . Customize output formats (JSON, YAML, Slack notifications, etc.)
+
+# Author : NavidSheibani
