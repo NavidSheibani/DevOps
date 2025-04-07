@@ -1,0 +1,212 @@
+
+######      Ansible CLI Tools Overview      ######
+
+Tool	                Description
+------------------------------------------------------------------
+ansible	                Run ad-hoc commands on remote hosts
+ansible-playbook	    Execute playbooks
+ansible-inventory	    View or manipulate inventories
+ansible-galaxy	        Manage roles and collections
+ansible-vault	        Encrypt and decrypt secrets
+ansible-config	        View or change configuration
+ansible-doc	            Show documentation for modules
+ansible-pull	        Pull playbooks from a VCS and run locally
+------------------------------------------------------------------
+
+
+########
+
+
+# Ad-hoc Commands with ansible
+
+$ ansible <pattern> -i <inventory> -m <module> -a "<args>"
+
+Option          	Description
+------------------------------------------------------------------
+-i	                Specify inventory file
+-m	                Module to use (ping, shell, apt, etc.)
+-a	                Arguments to the module
+-u	                SSH user
+--become	        Run as sudo/root
+--ask-become-pass	Prompt for sudo password
+--check	            Dry-run mode
+--limit	            Limit to specific hosts
+--one-line	        Output in a single line per host
+-k	                Prompt for SSH password
+-K              	Prompt for sudo password
+------------------------------------------------------------------
+
+
+Examples : 
+
+# Ping all hosts
+$ ansible all -i inventory.ini -m ping
+
+# Check uptime on webservers group
+$ ansible webservers -i inventory.ini -m shell -a "uptime"
+
+# Install a package using apt
+$ ansible all -m apt -a "name=htop state=present" --become
+
+# Run a custom shell command
+$ ansible all -m shell -a "df -h"
+
+
+
+########
+
+
+# Running Playbooks with ansible-playbook
+
+$ ansible-playbook <playbook.yml> -i <inventory>
+
+Option	                    Description
+------------------------------------------------------------------
+-i	                        Inventory file
+-l or --limit	            Limit to a host or group
+--check	                    Dry run
+--diff	                    Show changes made
+--tags	                    Run only specific tags
+--skip-tags	                Skip specific tags
+--start-at-task	            Resume from a task
+-u	                        SSH user
+-k	                        SSH password
+--become	                Run with sudo
+--ask-become-pass	        Ask for sudo password
+-e	                        Pass extra vars
+-v / -vv / -vvv / -vvvv	    Increase verbosity (up to connection debug)
+------------------------------------------------------------------
+
+
+Examples:
+
+# Run playbook on all hosts
+$ ansible-playbook -i inventory.ini site.yml
+
+# Limit to one host
+$ ansible-playbook site.yml -i inventory.ini --limit "web1"
+
+# Dry-run to see what would change
+$ ansible-playbook site.yml --check
+
+# Run only tagged tasks
+$ ansible-playbook site.yml --tags "nginx,restart"
+
+# Start playbook from a specific task
+$ ansible-playbook site.yml --start-at-task="Install Docker"
+
+# With extra variables
+$ ansible-playbook site.yml -e "env=production"
+
+
+
+########
+
+# Inventory Management with ansible-inventory
+
+$ ansible-inventory -i inventory.ini [options]
+
+Option	                    Description
+------------------------------------------------------------------
+--list	                    Show full inventory
+--graph	                    Show a graph of groups and hosts
+--host <hostname>	        Show variables for a host
+------------------------------------------------------------------
+
+Examples:
+
+$ ansible-inventory -i inventory.ini --list
+
+$ ansible-inventory -i inventory.ini --graph
+
+
+
+########
+
+
+# Module Help with ansible-doc
+
+$ ansible-doc <module>
+
+Examples:
+# Show documentation for the apt module
+$ ansible-doc apt
+
+# List all available modules
+$ ansible-doc -l
+
+
+########
+
+
+# Managing Vault with ansible-vault
+
+$ ansible-vault <command> <file>
+
+Command	                Description
+------------------------------------------------------------------
+create	                Create encrypted file
+edit	                Edit encrypted file
+encrypt	                Encrypt plaintext file
+decrypt	                Decrypt encrypted file
+rekey	                Change the password
+------------------------------------------------------------------
+
+Examples:
+# Create a vault file
+$ ansible-vault create secrets.yml
+
+# Encrypt a file
+$ ansible-vault encrypt group_vars/all.yml
+
+# Run playbook with vault password prompt
+$ ansible-playbook site.yml --ask-vault-pass
+
+
+
+########
+
+
+# Manage Roles & Collections with ansible-galaxy
+
+Examples:
+# Install a role
+$ ansible-galaxy install geerlingguy.nginx
+
+# Create a new role skeleton
+$ ansible-galaxy init myrole
+
+# Install a collection
+$ ansible-galaxy collection install community.docker
+
+
+
+########
+
+
+# Check Configuration with ansible-config
+
+$ ansible-config view          # View full config
+$ ansible-config list          # List available config options
+$ ansible-config dump --only-changed
+
+
+########
+
+# Use Git-Pulled Playbooks with ansible-pull
+This is like ansible-playbook, but pulls the playbook from a Git repo first (great for self-provisioning hosts).
+
+$ ansible-pull -U https://github.com/your/repo.git playbook.yml
+
+
+########
+
+# Combine Inventory + Variables + Tags
+
+$ ansible-playbook -i hosts.ini deploy.yml \
+    --limit webservers \
+    --tags "install,restart" \
+    -e "env=prod version=2.1" \
+    --check --diff
+
+# Author : NavidSheibani
