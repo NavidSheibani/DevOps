@@ -1,0 +1,9 @@
+[web_servers]
+server-1	ansible_host=192.168.122.39
+server-2	ansible_host=192.168.122.219
+server-3	ansible_host=192.168.122.13
+
+[web]
+server-1        ansible_host=192.168.122.39
+server-3        ansible_host=192.168.122.13
+

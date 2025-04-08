@@ -1,0 +1,4 @@
+# defaults/main.yml
+
+nginx_server_name: localhost
+
