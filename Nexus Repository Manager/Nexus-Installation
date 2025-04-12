@@ -1,0 +1,108 @@
+
+######      Sonatype Nexus Repository Manager      ######
+
+
+
+1- Create a Docker Compose file for Nexus
+
+$ mkdir nexus-docker && cd nexus-docker
+
+
+2- Create a file named docker-compose.yml:
+
+
+version: '3'
+
+services:
+  nexus:
+    image: sonatype/nexus3
+    container_name: nexus
+    ports:
+      - "8081:8081"  # Nexus Web UI
+      - "5000:5000"  # Docker Registry port
+    volumes:
+      - ./nexus-data:/nexus-data
+    environment:
+      - INSTALL4J_ADD_VM_PARAMS=-Xms2g -Xmx2g -XX:MaxDirectMemorySize=2g
+    restart: always
+
+
+
+Then run:
+
+$ docker compose up -d
+
+------
+
+3- Access Nexus UI
+
+http://<your-server-ip>:8081
+
+
+First-time password:
+
+$ cat nexus-data/admin.password
+
+
+------
+
+4- Login and Set Up Admin User
+
+After login, set a new admin password and skip anonymous access if you prefer.
+
+
+-------
+
+5- Create a Docker Hosted Repository
+
+ . Go to "Settings" → "Repositories" → "Create repository" → "docker (hosted)".
+
+ . Configure:
+
+      Name: docker-hosted
+
+      HTTP Port: 5000
+
+      Blob store: Use default
+
+      Allow anonymous: Optional
+
+ . Click Create Repository.
+
+
+---------
+
+6- Configure Docker Daemon (on client)
+
+Edit /etc/docker/daemon.json and add your Nexus IP or domain as insecure registry if you're using HTTP:
+
+{
+  "insecure-registries": ["<your-server-ip>:5000"]
+}
+
+Then restart Docker:
+
+$ sudo systemctl restart docker
+
+
+---------
+
+7- Push a Docker Image to Nexus
+
+Login (optional if anonymous is enabled):
+
+$ docker login <your-server-ip>:5000
+
+
+Tag and push:
+
+docker tag alpine <your-server-ip>:5000/alpine
+docker push <your-server-ip>:5000/alpine
+
+
+---------
+
+8- Verify in Nexus UI
+
+Go to Nexus UI > Browse > Select docker-hosted to see the uploaded image.
+
