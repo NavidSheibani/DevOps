@@ -1,0 +1,77 @@
+
+######      Setup Nginx Reverse Proxy with HTTPS for Nexus     ######
+
+# Install Nginx & Certbot
+
+$ sudo apt update
+$ sudo apt install nginx certbot python3-certbot-nginx -y
+
+
+# Assign a Domain Name
+
+Make sure your domain (e.g., nexus.example.com) points to your server’s public IP.
+
+
+# Configure Nginx for Nexus
+Create a new Nginx config:
+
+$ sudo vi /etc/nginx/sites-available/nexus
+Paste the following config:
+
+
+server {
+    listen 80;
+    server_name nexus.example.com;
+
+    location / {
+        proxy_pass http://localhost:8081/;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 80;
+    server_name registry.example.com;
+
+    location /v2/ {
+        proxy_pass http://localhost:5000/v2/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+
+##  Replace nexus.example.com with your Nexus web UI domain   ##
+##  Replace registry.example.com with the domain for your Docker Registry   ##
+
+------
+
+# Enable the Config
+
+$ sudo ln -s /etc/nginx/sites-available/nexus /etc/nginx/sites-enabled/
+$ sudo nginx -t
+$ sudo systemctl restart nginx
+
+
+----
+
+# Get SSL Certificates with Certbot
+
+$ sudo certbot --nginx -d nexus.example.com -d registry.example.com
+
+Follow the prompt and choose option to redirect HTTP to HTTPS.
+
+-----
+
+# Update Docker Clients to Use HTTPS
+No need to mark it as insecure anymore!
+
+$ docker login registry.example.com
+$ docker tag alpine registry.example.com/alpine
+$ docker push registry.example.com/alpine
