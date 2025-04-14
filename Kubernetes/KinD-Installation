@@ -1,0 +1,153 @@
+
+
+Installing KinD (Kubernetes in Docker) is a straightforward process that allows you to run a local Kubernetes cluster using Docker containers.
+Below is a step-by-step guide to install and set up KinD on your system.
+
+this installation contains: 
+installing :
+Docker + kubectl + KinD + Krew + kubectx + kubens + bash completetion for kind
+
+-----------------------------------------------------------------
+Prerequisites
+Docker: Ensure Docker is installed and running on your system.
+
+kubectl: The Kubernetes command-line tool is needed to interact with the cluster.
+
+-----------------------------------------------------------------
+
+# installing Docker : 
+
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo apt install -y docker-compose
+docker --version
+docker-compose --version
+
+
+----------------------------------------------------------------
+# Install kubectl binary with curl on Linux 
+
+1-  Download the latest release with the command:
+
+    $curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+
+2-  Validate the binary (optional)
+
+    Download the kubectl checksum file:
+
+    $curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+
+    Validate the kubectl binary against the checksum file:
+
+    echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+
+3-  Install kubectl
+
+    $sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+
+4-  Test to ensure the version you installed is up-to-date:
+
+    $kubectl version --client
+
+
+
+--------------------------------------------------------------------
+
+# Step-by-Step Installation of KinD
+
+1-  Download the latest KinD binary:
+    $ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-$(uname)-amd64
+
+2-  Make the binary executable (Linux/macOS):
+    $ chmod +x ./kind
+
+3-  Move the binary to a directory in your PATH:
+    $ sudo mv ./kind /usr/local/bin/kind
+
+4-  Verify installation:
+    $ kind version
+
+---------------------------------------------------------------------
+
+# bash completetion for kind
+To enable bash completion for KinD (Kubernetes in Docker), you need to generate and source 
+the completion script for the kind command. Below is a step-by-step guide to set it up.
+
+Step 1: Verify KinD Installation
+        $ kind --version
+
+Step 2: Generate Bash Completion Script
+        $ kind completion bash
+
+Step 3: Add Completion to Your Shell
+        $ kind completion bash > ~/.kind-completion
+        $ echo "source ~/.kind-completion" >> ~/.bashrc
+        $ source ~/.bashrc
+        $ echo "source <(kind completion bash)" >> ~/.bashrc
+        $ source ~/.bashrc
+
+-----------------------------------------------------------------------
+
+# Installing Krew 
+Krew itself is a kubectl plugin that is installed and updated via Krew (yes, Krew self-hosts).
+
+step 1 : Make sure that git is installed.
+step 2 : run this : 
+
+(
+  set -x; cd "$(mktemp -d)" &&
+  OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
+  ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
+  KREW="krew-${OS}_${ARCH}" &&
+  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
+  tar zxvf "${KREW}.tar.gz" &&
+  ./"${KREW}" install krew
+)
+
+step 3 : 
+Add the $HOME/.krew/bin directory to your PATH environment variable.
+To do this, update your .bashrc or .zshrc file and append the following line:
+
+$ export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+
+step 4 : 
+restart your shell.
+
+
+-----------------------------------------------------------------------
+
+# installing kubectx + kubens
+
+$ kubectl krew install ctx
+$ kubectl krew install ns
+
+Good alias:
+
+echo '
+# kubectx
+alias kctx="kubectl ctx"
+alias kubectx="kubectl ctx"
+
+# kubens
+alias kns="kubectl ns"
+alias kubens="kubectl ns"
+'  >> ~/.bashrc
+
+# Author : NavidSheibani
