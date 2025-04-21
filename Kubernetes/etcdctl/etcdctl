@@ -1,0 +1,111 @@
+
+######      What is etcdctl      ######
+
+etcdctl is the CLI (command-line interface) tool used to interact with etcd,
+which is the key-value store that Kubernetes uses as its backend database.
+
+In Kubernetes, etcd stores all cluster data:
+
+. Nodes
+
+. Pods
+
+. ConfigMaps
+
+. Secrets
+
+. Roles, bindings, etc.
+
+So if you use etcdctl, you're talking directly to the database that holds everything.
+
+
+#  Where is etcd used in Kubernetes?
+
+Stores cluster state
+
+Used by kube-apiserver
+
+Without etcd, the control plane doesn’t work
+
+Backing up etcd = backing up your whole cluster
+
+
+---------------------
+
+# Common etcdctl Commands
+
+
+1- View etcd Cluster Health:
+
+$ ETCDCTL_API=3 etcdctl endpoint health --endpoints=https://127.0.0.1:2379 \
+   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+   --cert=/etc/kubernetes/pki/etcd/server.crt \
+   --key=/etc/kubernetes/pki/etcd/server.key
+
+
+2- List All Keys
+ 
+$ ETCDCTL_API=3 etcdctl get "" --prefix --keys-only \
+   --endpoints=https://127.0.0.1:2379 \
+   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+   --cert=/etc/kubernetes/pki/etcd/server.crt \
+   --key=/etc/kubernetes/pki/etcd/server.key
+ 
+
+3- View a Specific Key
+
+$ ETCDCTL_API=3 etcdctl get /registry/pods/default/my-pod \
+   --endpoints=https://127.0.0.1:2379 \
+   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+   --cert=/etc/kubernetes/pki/etcd/server.crt \
+   --key=/etc/kubernetes/pki/etcd/server.key
+ 
+
+4- Backup etcd (Very Important!)
+
+$ ETCDCTL_API=3 etcdctl snapshot save /path/to/backup.db \
+   --endpoints=https://127.0.0.1:2379 \
+   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+   --cert=/etc/kubernetes/pki/etcd/server.crt \
+   --key=/etc/kubernetes/pki/etcd/server.key
+
+
+5- Restore etcd from a Snapshot
+
+$ ETCDCTL_API=3 etcdctl snapshot restore /path/to/backup.db \
+   --data-dir /var/lib/etcd-from-backup
+
+
+
+----------------------
+
+
+# Authentication and Security
+
+You always need:
+
+--endpoints: The etcd server (usually https://127.0.0.1:2379)
+
+--cert, --key, --cacert: TLS auth files
+
+These are usually found on the control plane node:
+    
+$ /etc/kubernetes/pki/etcd/
+
+
+-------------------------
+
+
+####  Pro Tip    #####
+
+Run etcdctl only on the control plane node, and ideally inside the etcd container like:
+
+$ docker exec -it etcd-container-name sh
+
+
+Or on kubeadm-managed systems:
+
+$ crictl ps | grep etcd
+$ crictl exec -it <etcd-container-id> sh
+
+# Author : NavidSheibani

@@ -1,0 +1,54 @@
+
+######      install etcdctl       ######
+
+
+
+- Option 1: Already installed with kubeadm (most common)
+
+If your Kubernetes cluster was installed using kubeadm,
+and you're on the control plane node, etcdctl is likely already available inside the etcd container.
+
+✅ Use etcdctl inside the container:
+
+# Find etcd container
+crictl ps | grep etcd
+
+# Exec into etcd container (copy container ID)
+crictl exec -it <container-id> sh
+
+# Now you can use etcdctl inside:
+ETCDCTL_API=3 etcdctl version
+
+
+
+
+- Option 2: Install etcdctl on the Host (Linux)
+
+. Download Latest etcd Release:
+
+ETCD_VER=v3.5.13
+
+# Download and extract
+wget https://github.com/etcd-io/etcd/releases/download/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz
+tar xzvf etcd-${ETCD_VER}-linux-amd64.tar.gz
+cd etcd-${ETCD_VER}-linux-amd64
+
+
+. Move the Binaries
+
+$ sudo mv etcdctl /usr/local/bin/
+
+
+. Now check the version:
+
+$ etcdctl version
+
+
+
+# Required Files for TLS (for kubeadm clusters)
+These are usually found here on the control plane node:
+
+--cacert=/etc/kubernetes/pki/etcd/ca.crt
+--cert=/etc/kubernetes/pki/etcd/server.crt
+--key=/etc/kubernetes/pki/etcd/server.key
+
