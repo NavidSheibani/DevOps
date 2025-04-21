@@ -1,0 +1,98 @@
+
+######      Backup and Restore etcd      ######
+
+This is tailored for kubeadm-based Kubernetes clusters,
+where etcd runs as a static pod on the control plane node.
+
+
+
+# Prerequisites
+
+. Run these scripts on the control-plane node
+
+. You must have access to:
+
+    . etcdctl
+
+    . TLS certs:
+        /etc/kubernetes/pki/etcd/ca.crt
+        /etc/kubernetes/pki/etcd/server.crt
+        /etc/kubernetes/pki/etcd/server.key
+
+--------------------------------------------
+
+# etcd Backup Script
+
+#!/bin/bash
+
+# etcd-backup.sh
+
+TIMESTAMP=$(date +%F_%H-%M-%S)
+BACKUP_DIR="/var/backups/etcd"
+SNAPSHOT="${BACKUP_DIR}/etcd-snapshot-${TIMESTAMP}.db"
+
+# Create backup directory
+mkdir -p "${BACKUP_DIR}"
+
+echo "[INFO] Starting etcd snapshot backup..."
+ETCDCTL_API=3 etcdctl snapshot save "${SNAPSHOT}" \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key
+
+if [ $? -eq 0 ]; then
+  echo "[OK] etcd backup completed: ${SNAPSHOT}"
+else
+  echo "[ERROR] etcd backup failed."
+  exit 1
+fi
+
+
+
+$ sudo bash etcd-backup.sh
+
+----------------------------------------
+
+#  etcd Restore Script
+This should only be used when etcd is down or you're setting up a new control plane from backup.
+
+
+#!/bin/bash
+
+# etcd-restore.sh
+
+BACKUP_FILE="$1"
+RESTORE_DIR="/var/lib/etcd-restore"
+
+if [ -z "$BACKUP_FILE" ]; then
+  echo "Usage: $0 <path-to-snapshot.db>"
+  exit 1
+fi
+
+echo "[INFO] Stopping kube-apiserver and etcd (optional, manual step on production)"
+systemctl stop kubelet
+
+echo "[INFO] Restoring etcd from snapshot..."
+ETCDCTL_API=3 etcdctl snapshot restore "${BACKUP_FILE}" \
+  --data-dir="${RESTORE_DIR}"
+
+if [ $? -ne 0 ]; then
+  echo "[ERROR] Restore failed."
+  exit 1
+fi
+
+echo "[INFO] Replace old etcd data directory (Make sure you back up the old one first)"
+mv /var/lib/etcd /var/lib/etcd.bak.$(date +%s)
+mv "${RESTORE_DIR}" /var/lib/etcd
+
+echo "[INFO] Restarting kubelet..."
+systemctl start kubelet
+
+echo "[OK] etcd restored from: ${BACKUP_FILE}"
+
+
+
+$ sudo bash etcd-restore.sh /var/backups/etcd/etcd-snapshot-2025-04-21_10-00-00.db
+
+# Author : NavidSheibani
